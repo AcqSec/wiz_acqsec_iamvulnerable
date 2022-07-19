@@ -27,10 +27,8 @@ module "tool-testing" {
   aws_root_user = format("arn:aws:iam::%s:root", data.aws_caller_identity.current.account_id)
 }
 
-###################
 # Module: Lambda
 # Uncomment the next module to create a lambda and related resources
-###################
 
 #module "lambda" {
 # source = "./modules/non-free-resources/lambda"
