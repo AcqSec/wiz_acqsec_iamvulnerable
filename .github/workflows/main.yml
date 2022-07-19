@@ -1,36 +1,42 @@
-# Check to make sure no non-free modules are enabled
+name: 'wiz-cli'
+on: [pull_request]
 
-name: module_check
-
-# Controls when the workflow will run
-on:
-  # Triggers the workflow on push or pull request events but only for the main branch
-  push:
-    branches: [ main ]
-    paths:
-    - 'main.tf'  
-  pull_request:
-    branches: [ main ]
-    paths:
-    - 'main.tf'
-
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  wiz-cli-iac-scan:
+    name: 'Wiz-cli IaC Scan'
     runs-on: ubuntu-latest
+    environment: wiz-keys
+    env:
+      SCAN_PATH: "." # Set the relative path in the repo to scan
+      POLICY: "Default IaC policy" # Set the desired Wiz-cli policy to use
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      WIZ_CLIENT_ID: ${{ secrets.WIZ_CLIENT_ID }}
+      WIZ_CLIENT_SECRET: ${{ secrets.WIZ_CLIENT_SECRET }}
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+    # Checkout the repository to the GitHub Actions runner
+    - name: Check out repository
+    #  uses: actions/checkout@v2
+      run: |
+        export REPO_PATH="${GITHUB_WORKSPACE}/repo"
+        if [ -d "${REPO_PATH}" ]; then rm -Rf ${REPO_PATH}; fi
+        git clone https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/AcqSec/wiz_acqsec_iamvulnerable.git ${REPO_PATH}
+        if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
+          export GITHUB_SHA=$(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha)
+        fi
+        cd ${REPO_PATH}
+        git checkout ${GITHUB_SHA}
 
-      # Runs a single command using the runners shell
-      - name: Run a script
-        run: |
-          chmod +x .github/workflows/module_check.sh
-          .github/workflows/module_check.sh
+    - name: Download Wiz-cli
+      run: curl -o wizcli https://wizcli.app.wiz.io/wizcli && chmod +x wizcli
+
+    - name: Authenticate to Wiz
+      run: ./wizcli auth --id "$WIZ_CLIENT_ID" --secret "$WIZ_CLIENT_SECRET"
+
+    - name: Run wiz-cli IaC scan
+      run: ./wizcli iac scan --path $SCAN_PATH --policy "$POLICY"
