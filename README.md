@@ -224,7 +224,7 @@ I was also afraid of Terraform and projects that would create resources in my ac
 
 Yes. Each tool will keep its Terraform state separately, but all resources will be created, updated, and deleted in the same account, and they can coexist.
 
-# Prior work and good references
+# Prior work and good references 
 
 * https://github.com/RhinoSecurityLabs/AWS-IAM-Privilege-Escalation
 * https://rhinosecuritylabs.com/aws/aws-privilege-escalation-methods-mitigation/
